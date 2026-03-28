@@ -54,9 +54,23 @@ curl -fsSL https://raw.githubusercontent.com/RebootED-education/gotto/main/scrip
 
 #### Install TinyGo (Linux)
 
+##### Debian / Ubuntu (recommended)
+
+1. Download and install the official `.deb` package:
+   ```bash
+   export TINYGO_VERSION=0.40.1
+   wget https://github.com/tinygo-org/tinygo/releases/download/v${TINYGO_VERSION}/tinygo_${TINYGO_VERSION}_amd64.deb
+   sudo dpkg -i tinygo_${TINYGO_VERSION}_amd64.deb || sudo apt install -f -y
+   sudo dpkg -i tinygo_${TINYGO_VERSION}_amd64.deb
+   tinygo version
+   ```
+   The Debian package adds `tinygo` to `/usr/bin` and installs the necessary udev rules automatically.
+
+##### Other distributions
+
 1. Fetch and unpack the TinyGo release archive:
    ```bash
-   export TINYGO_VERSION=0.32.0
+   export TINYGO_VERSION=0.40.1
    wget https://github.com/tinygo-org/tinygo/releases/download/v${TINYGO_VERSION}/tinygo${TINYGO_VERSION}.linux-amd64.tar.gz
    sudo rm -rf /usr/local/tinygo
    sudo tar -C /usr/local -xzf tinygo${TINYGO_VERSION}.linux-amd64.tar.gz
