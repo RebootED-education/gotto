@@ -120,7 +120,7 @@ If you just want to flash the latest rolling obstacle demo without cloning the r
 curl -fsSL https://raw.githubusercontent.com/RebootED-education/gotto/main/scripts/flash_demo.sh | bash
 ```
 
-Set `PORT=/dev/ttyACM0` (or similar) before the command if you need to force a serial port, or `TARGET=` to override the TinyGo target.
+Set `PORT=/dev/ttyACM0` (or similar) before the command if you need to force a serial port, or `TARGET=` to override the TinyGo target. If `tinygo` is not installed, the script will automatically run the toolchain installer (requires sudo).
 
 ## Motor Trimming
 

@@ -5,16 +5,14 @@ set -euo pipefail
 REPO_URL=${REPO_URL:-https://github.com/RebootED-education/gotto.git}
 TARGET=${TARGET:-nicenano}
 PROFILE_FILE="${HOME}/.profile"
+INSTALLER_URL=${INSTALLER_URL:-https://raw.githubusercontent.com/RebootED-education/gotto/main/scripts/install_toolchain.sh}
+
+repo_root=""
+tmp_dir=""
+cleanup=0
 
 log() {
 	printf "[%s] %s\n" "$(date +'%H:%M:%S')" "$*"
-}
-
-require_binary() {
-	if ! command -v "$1" >/dev/null 2>&1; then
-		log "Error: '$1' is not installed or not on PATH."
-		exit 1
-	fi
 }
 
 setup_repo() {
@@ -50,11 +48,41 @@ flash_demo() {
 	popd >/dev/null
 }
 
+ensure_tinygo() {
+	if command -v tinygo >/dev/null 2>&1; then
+		return
+	fi
+
+	log "TinyGo not found; installing GOtto toolchain (requires sudo)"
+	local installer_path="${repo_root}/scripts/install_toolchain.sh"
+	local installer_hint="bash ${repo_root}/scripts/install_toolchain.sh"
+	local tmp_installer=""
+	if [[ ! -f "${installer_path}" ]]; then
+		tmp_installer=$(mktemp)
+		curl -fsSL "${INSTALLER_URL}" -o "${tmp_installer}"
+		installer_path="${tmp_installer}"
+		installer_hint="curl -fsSL ${INSTALLER_URL} | bash"
+	fi
+	bash "${installer_path}"
+	if [[ -n "${tmp_installer}" ]]; then
+		rm -f "${tmp_installer}"
+	fi
+
+	export PATH="/usr/local/go/bin:/usr/local/tinygo/bin:${PATH}"
+	if ! command -v tinygo >/dev/null 2>&1; then
+		log "TinyGo installation failed or PATH not updated. Please run: ${installer_hint}"
+		exit 1
+	fi
+}
+
 main() {
-	require_binary git
-	require_binary tinygo
+	if ! command -v git >/dev/null 2>&1; then
+		log "Error: 'git' is required. Please install git and re-run."
+		exit 1
+	fi
 	setup_repo
 	trap cleanup_repo EXIT
+	ensure_tinygo
 	flash_demo
 }
 
