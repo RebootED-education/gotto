@@ -25,12 +25,56 @@ This project brings the beloved Otto ninja robot to the TinyGo ecosystem, allowi
 
 ### Prerequisites
 
-1. **Install TinyGo**: Follow the installation guide at [tinygo.org/getting-started/install/](https://tinygo.org/getting-started/install/)
+#### Install the Go toolset (Linux)
 
-2. **Clone the repository**:
+1. Install the base build tools and ARM dependencies (Debian/Ubuntu example):
    ```bash
+   sudo apt update
+   sudo apt install -y build-essential git wget tar clang gcc-arm-none-eabi libnewlib-arm-none-eabi
+   ```
+
+2. Download and install the latest Go toolchain (provides `go`, `gofmt`, etc.). Replace the version if a newer release is available:
+   ```bash
+   export GO_VERSION=1.22.4
+   wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+   sudo rm -rf /usr/local/go
+   sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+   echo 'export PATH=/usr/local/go/bin:$PATH' >> ~/.profile
+   source ~/.profile
+   go version
+   ```
+
+#### Install TinyGo (Linux)
+
+1. Fetch and unpack the TinyGo release archive:
+   ```bash
+   export TINYGO_VERSION=0.32.0
+   wget https://github.com/tinygo-org/tinygo/releases/download/v${TINYGO_VERSION}/tinygo${TINYGO_VERSION}.linux-amd64.tar.gz
+   sudo rm -rf /usr/local/tinygo
+   sudo tar -C /usr/local -xzf tinygo${TINYGO_VERSION}.linux-amd64.tar.gz
+   echo 'export PATH=/usr/local/tinygo/bin:$PATH' >> ~/.profile
+   source ~/.profile
+   tinygo version
+   ```
+
+2. Install the provided udev rules so the NiceNano can be flashed without sudo:
+   ```bash
+   sudo cp /usr/local/tinygo/udev/99-tinygo.rules /etc/udev/rules.d/
+   sudo udevadm control --reload-rules
+   sudo udevadm trigger
+   ```
+   Unplug and reconnect the board after applying the rules.
+
+#### Clone the repository
+
+1. ```bash
    git clone <repository-url>
    cd gotto
+   ```
+
+2. Install the Go + TinyGo toolchain in one step (works on Debian/Ubuntu, Fedora, and Arch families):
+   ```bash
+   ./scripts/install_toolchain.sh
    ```
 
 ### Hardware Setup

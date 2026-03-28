@@ -7,7 +7,6 @@ import (
 	"github.com/HattoriHanzo031/gotto/buzzer"
 	"github.com/HattoriHanzo031/gotto/ninja"
 	"github.com/HattoriHanzo031/gotto/servo"
-	"tinygo.org/x/drivers/hcsr04"
 	tgservo "tinygo.org/x/drivers/servo"
 )
 
@@ -21,18 +20,10 @@ var (
 	rFoot = machine.P0_20
 	lFoot = machine.P0_17
 
-	usTrig = machine.P0_02
-	usEcho = machine.P0_29
+	usTrig = machine.P1_00
+	usEcho = machine.P0_11
 
 	buzzerPin = machine.P0_31
-)
-
-const (
-	rollThrottle        = 55
-	turnSpeed           = 40
-	obstacleThresholdMm = 150
-	turnDuration        = 700 * time.Millisecond
-	sensorPollInterval  = 50 * time.Millisecond
 )
 
 func main() {
@@ -63,51 +54,21 @@ func main() {
 		RlAngle:           12,
 	})
 
-	us := hcsr04.New(usTrig, usEcho)
-	if err := us.Configure(); err != nil {
-		panic(err)
-	}
-
-	if err := n.Mode(ninja.ModeRoll); err != nil {
-		panic(err)
-	}
-
 	for {
-		if err := n.Roll(rollThrottle, 0); err != nil {
-			panic(err)
-		}
+		n.Mode(ninja.ModeWalk)
+		time.Sleep(time.Second)
 
-		for {
-			dist := us.ReadDistance()
-			if dist != 0 && dist < obstacleThresholdMm {
-				if err := n.RollStop(); err != nil {
-					panic(err)
-				}
+		n.Wave()
+		time.Sleep(time.Second)
 
-				_ = n.BuzzerTone(buzzer.Note{
-					Period:   buzzer.A4,
-					Duration: time.Second,
-				})
+		n.RightLegSpin(30, 3*time.Second)
+		time.Sleep(time.Second)
 
-				time.Sleep(100 * time.Millisecond)
-
-				if err := n.Roll(0, turnSpeed); err != nil {
-					panic(err)
-				}
-
-				time.Sleep(turnDuration)
-
-				if err := n.RollStop(); err != nil {
-					panic(err)
-				}
-
-				time.Sleep(200 * time.Millisecond)
-
-				break
-			}
-
-			time.Sleep(sensorPollInterval)
-		}
+		n.Mode(ninja.ModeRoll)
+		n.Roll(50, 100)
+		time.Sleep(2 * time.Second)
+		n.Roll(0, 0)
+		time.Sleep(time.Second)
 	}
 }
 
