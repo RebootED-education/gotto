@@ -31,7 +31,6 @@ const (
 	rollThrottle        = 55
 	turnSpeed           = 40
 	obstacleThresholdMm = 150
-	turnDuration        = 700 * time.Millisecond
 	sensorPollInterval  = 50 * time.Millisecond
 )
 
@@ -75,37 +74,7 @@ func main() {
 			panic(err)
 		}
 
-		for {
-			dist := us.ReadDistance()
-			if dist != 0 && dist < obstacleThresholdMm {
-				if err := n.RollStop(); err != nil {
-					panic(err)
-				}
-
-				_ = n.BuzzerTone(buzzer.Note{
-					Period:   buzzer.A4,
-					Duration: time.Second,
-				})
-
-				time.Sleep(100 * time.Millisecond)
-
-				if err := n.Roll(0, turnSpeed); err != nil {
-					panic(err)
-				}
-
-				time.Sleep(turnDuration)
-
-				if err := n.RollStop(); err != nil {
-					panic(err)
-				}
-
-				time.Sleep(200 * time.Millisecond)
-
-				break
-			}
-
-			time.Sleep(sensorPollInterval)
-		}
+		waitForObstacleAndAvoid(n, &us, bz)
 	}
 }
 
@@ -116,4 +85,57 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func waitForObstacleAndAvoid(n *ninja.Ninja, us *hcsr04.Device, bz *buzzer.Buzzer) {
+	for {
+		dist := us.ReadDistance()
+		if dist != 0 && dist < obstacleThresholdMm {
+			avoidObstacle(n, us, bz)
+			return
+		}
+		time.Sleep(sensorPollInterval)
+	}
+}
+
+func avoidObstacle(n *ninja.Ninja, us *hcsr04.Device, bz *buzzer.Buzzer) {
+	stopWarning := make(chan struct{})
+	go warningToneLoop(bz, stopWarning)
+	defer close(stopWarning)
+
+	if err := n.Roll(0, turnSpeed); err != nil {
+		panic(err)
+	}
+
+	for {
+		time.Sleep(sensorPollInterval)
+		dist := us.ReadDistance()
+		if dist == 0 || dist >= obstacleThresholdMm {
+			break
+		}
+	}
+
+	if err := n.RollStop(); err != nil {
+		panic(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+}
+
+func warningToneLoop(bz *buzzer.Buzzer, stop <-chan struct{}) {
+	note := buzzer.Note{Period: buzzer.A4, Duration: 150 * time.Millisecond}
+	rest := buzzer.Note{Period: buzzer.Silence, Duration: 80 * time.Millisecond}
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+		}
+		_ = bz.Tone(note)
+		select {
+		case <-stop:
+			return
+		default:
+		}
+		_ = bz.Tone(rest)
+	}
 }
