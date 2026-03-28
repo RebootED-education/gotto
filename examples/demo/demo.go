@@ -64,9 +64,7 @@ func main() {
 	})
 
 	us := hcsr04.New(usTrig, usEcho)
-	if err := us.Configure(); err != nil {
-		panic(err)
-	}
+	us.Configure()
 
 	if err := n.Mode(ninja.ModeRoll); err != nil {
 		panic(err)
