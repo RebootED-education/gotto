@@ -1,6 +1,8 @@
 module github.com/HattoriHanzo031/gotto
 
-go 1.22
+go 1.22.1
+
+toolchain go1.22.4
 
 require (
 	tinygo.org/x/bluetooth v0.14.0
