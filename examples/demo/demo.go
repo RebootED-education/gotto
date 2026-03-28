@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/HattoriHanzo031/gotto/buzzer"
-	"github.com/HattoriHanzo031/gotto/ninja"
 	"github.com/HattoriHanzo031/gotto/servo"
 	"tinygo.org/x/drivers/hcsr04"
 	tgservo "tinygo.org/x/drivers/servo"
@@ -28,14 +27,13 @@ var (
 )
 
 const (
-	rollThrottle        = 55
-	turnSpeed           = 40
 	obstacleThresholdMm = 150
 	sensorPollInterval  = 50 * time.Millisecond
 )
 
 func main() {
 	time.Sleep(3 * time.Second)
+	println("GOtto hardware diagnostic demo starting...")
 
 	legArr := must(tgservo.NewArray(pwmLeg))
 	footArr := must(tgservo.NewArray(pwmFoot))
@@ -50,31 +48,23 @@ func main() {
 		panic(err)
 	}
 
-	n := ninja.New(rlServo, llServo, rfServo, lfServo, bz)
+	println("Step 1/3: buzzer self-test")
+	buzzerSelfTest(bz)
 
-	n.Trim(ninja.Trim{
-		TiltAngle:         0,
-		LeftStepDuration:  0,
-		RightStepDuration: 150 * time.Millisecond,
-		LfSpeed:           0,
-		RfSpeed:           0,
-		LlAngle:           20,
-		RlAngle:           12,
-	})
-
+	println("Step 2/3: ultrasonic + buzzer interaction (bring an object within 15cm)")
 	us := hcsr04.New(usTrigPin, usEchoPin)
 	us.Configure()
+	buzzerUltrasonicTest(bz, &us)
 
-	if err := n.Mode(ninja.ModeRoll); err != nil {
-		panic(err)
-	}
+	println("Step 3/3: exercising legs and feet individually")
+	testLegServo("Left Leg", llServo)
+	testLegServo("Right Leg", rlServo)
+	testFootServo("Left Foot", lfServo)
+	testFootServo("Right Foot", rfServo)
 
+	println("Diagnostics finished. Restart the board to rerun.")
 	for {
-		if err := n.Roll(rollThrottle, 0); err != nil {
-			panic(err)
-		}
-
-		waitForObstacleAndAvoid(n, &us, bz)
+		time.Sleep(time.Hour)
 	}
 }
 
@@ -87,38 +77,57 @@ func must[T any](v T, err error) T {
 	return v
 }
 
-func waitForObstacleAndAvoid(n *ninja.Ninja, us *hcsr04.Device, bz *buzzer.Buzzer) {
-	for {
-		if detectedObstacle(us) {
-			avoidObstacle(n, us, bz)
-			return
+func buzzerSelfTest(bz *buzzer.Buzzer) {
+	sequence := []buzzer.Note{
+		{Period: buzzer.A4, Duration: 200 * time.Millisecond},
+		{Period: buzzer.C5, Duration: 200 * time.Millisecond},
+		{Period: buzzer.E5, Duration: 200 * time.Millisecond},
+		{Period: buzzer.A5, Duration: 300 * time.Millisecond},
+		{Period: buzzer.Silence, Duration: 150 * time.Millisecond},
+	}
+	for i := 0; i < 2; i++ {
+		for _, note := range sequence {
+			_ = bz.Tone(note)
 		}
-		time.Sleep(sensorPollInterval)
+		_ = bz.Tone(buzzer.Note{Period: buzzer.Silence, Duration: 250 * time.Millisecond})
 	}
 }
 
-func avoidObstacle(n *ninja.Ninja, us *hcsr04.Device, bz *buzzer.Buzzer) {
-	if err := n.Roll(0, turnSpeed); err != nil {
-		panic(err)
-	}
-
-	note := buzzer.Note{Period: buzzer.A4, Duration: 150 * time.Millisecond}
-	rest := buzzer.Note{Period: buzzer.Silence, Duration: 80 * time.Millisecond}
-	for {
-		_ = bz.Tone(note)
-		if !detectedObstacle(us) {
-			break
-		}
-		_ = bz.Tone(rest)
-		if !detectedObstacle(us) {
-			break
+func buzzerUltrasonicTest(bz *buzzer.Buzzer, us *hcsr04.Device) {
+	note := buzzer.Note{Period: buzzer.F4, Duration: 150 * time.Millisecond}
+	rest := buzzer.Note{Period: buzzer.Silence, Duration: 100 * time.Millisecond}
+	for i := 0; i < 120; i++ {
+		if detectedObstacle(us) {
+			_ = bz.Tone(note)
+		} else {
+			_ = bz.Tone(rest)
 		}
 	}
+}
 
-	if err := n.RollStop(); err != nil {
-		panic(err)
+func testLegServo(label string, s servo.Servo180) {
+	println(label, "servo sweep")
+	angles := [...]int{90, 60, 120, 90}
+	for _, angle := range angles {
+		if err := s.SetAngle(angle); err != nil {
+			println(label, "error:", err.Error())
+			return
+		}
+		time.Sleep(700 * time.Millisecond)
 	}
-	time.Sleep(200 * time.Millisecond)
+}
+
+func testFootServo(label string, s servo.Servo360) {
+	println(label, "speed sweep")
+	speeds := [...]int{40, -40, 0}
+	for _, speed := range speeds {
+		if err := s.SetSpeed(speed); err != nil {
+			println(label, "error:", err.Error())
+			return
+		}
+		time.Sleep(800 * time.Millisecond)
+	}
+	_ = s.SetSpeed(0)
 }
 
 func detectedObstacle(us *hcsr04.Device) bool {
