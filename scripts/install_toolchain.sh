@@ -9,6 +9,8 @@ SHELL_CONFIGS=("${HOME}/.profile" "${HOME}/.bashrc" "${HOME}/.bash_profile" "${H
 GO_COMPAT_MIN=${GO_COMPAT_MIN:-1.19}
 GO_COMPAT_MAX=${GO_COMPAT_MAX:-1.22}
 ALLOW_UNSUPPORTED_GO=${ALLOW_UNSUPPORTED_GO:-0}
+GOTOOLCHAIN_VALUE="go${GO_VERSION}"
+export GOTOOLCHAIN="${GOTOOLCHAIN_VALUE}"
 OS_ID=""
 OS_LIKE=""
 
@@ -117,6 +119,8 @@ install_go() {
 	log "Installing Go to /usr/local/go"
 	sudo tar -C /usr/local -xzf "${archive}"
 	append_path_line 'export PATH=/usr/local/go/bin:$PATH'
+	append_path_line "export GOTOOLCHAIN=${GOTOOLCHAIN_VALUE}"
+	export GOTOOLCHAIN="${GOTOOLCHAIN_VALUE}"
 	create_go_symlinks
 	log "$(/usr/local/go/bin/go version) installed"
 }

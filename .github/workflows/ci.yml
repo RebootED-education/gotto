@@ -12,6 +12,10 @@ permissions:
 jobs:
   tinygo:
     runs-on: ubuntu-latest
+    env:
+      GO_VERSION: "1.22.4"
+      TINYGO_VERSION: "0.40.1"
+      GOTOOLCHAIN: go1.22.4
     steps:
       - uses: actions/checkout@v4
 
@@ -19,9 +23,6 @@ jobs:
         run: bash -n scripts/install_toolchain.sh
 
       - name: Install TinyGo toolchain
-        env:
-          GO_VERSION: "1.22.4"
-          TINYGO_VERSION: "0.40.1"
         run: bash scripts/install_toolchain.sh
 
       - name: Update PATH for Go and TinyGo
@@ -45,5 +46,5 @@ jobs:
             examples/trim
           )
           for dir in "${examples[@]}"; do
-            tinygo build -target nicenano -o "/tmp/$(basename "$dir").uf2" "$dir"
+            tinygo build -target nicenano -o "/tmp/$(basename "$dir").uf2" "./$dir"
           done

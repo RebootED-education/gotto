@@ -33,7 +33,7 @@ Run the following command to install Go, TinyGo, required build tools, and udev 
 curl -fsSL https://raw.githubusercontent.com/RebootED-education/gotto/main/scripts/install_toolchain.sh | bash
 ```
 
-> The installer pins Go to the most recent TinyGo-supported release (currently 1.22.x) and links it into `/usr/local/bin`, so `tinygo` never ends up using an unsupported Go 1.25+. Override the pinned version with `GO_VERSION=...`; set `ALLOW_UNSUPPORTED_GO=1` only if you intentionally want to skip the safety check.
+> The installer pins Go to the most recent TinyGo-supported release (currently 1.22.x), exports `GOTOOLCHAIN=go1.22.x`, and links the binaries into `/usr/local/bin`, so `tinygo` never ends up using an unsupported Go 1.25+. Override the pinned version with `GO_VERSION=...`; set `ALLOW_UNSUPPORTED_GO=1` only if you intentionally want to skip the safety check.
 
 #### Install the Go toolset (Linux)
 
