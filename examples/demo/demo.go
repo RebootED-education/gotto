@@ -16,13 +16,13 @@ var (
 	pwmLeg    = machine.PWM1
 	pwmBuzzer = machine.PWM0
 
-	rLeg  = machine.P0_24
-	lLeg  = machine.P0_22
-	rFoot = machine.P0_20
-	lFoot = machine.P0_17
+	rLegPin  = machine.P0_24
+	lLegPin  = machine.P0_22
+	rFootPin = machine.P0_20
+	lFootPin = machine.P0_17
 
-	usTrig = machine.P0_02
-	usEcho = machine.P0_29
+	usTrigPin = machine.P1_00
+	usEchoPin = machine.P0_11
 
 	buzzerPin = machine.P0_31
 )
@@ -41,10 +41,10 @@ func main() {
 	legArr := must(tgservo.NewArray(pwmLeg))
 	footArr := must(tgservo.NewArray(pwmFoot))
 
-	llServo := servo.New180(must(legArr.Add(lLeg)), 450, 2550)
-	rlServo := servo.New180(must(legArr.Add(rLeg)), 450, 2550)
-	lfServo := servo.New360(must(footArr.Add(lFoot)), 450, 2550)
-	rfServo := servo.New360(must(footArr.Add(rFoot)), 450, 2550)
+	llServo := servo.New180(must(legArr.Add(lLegPin)), 450, 2550)
+	rlServo := servo.New180(must(legArr.Add(rLegPin)), 450, 2550)
+	lfServo := servo.New360(must(footArr.Add(lFootPin)), 450, 2550)
+	rfServo := servo.New360(must(footArr.Add(rFootPin)), 450, 2550)
 
 	bz := buzzer.New(buzzer.NewPwmChannel(pwmBuzzer, buzzerPin))
 	if err := bz.Configure(); err != nil {
@@ -63,7 +63,7 @@ func main() {
 		RlAngle:           12,
 	})
 
-	us := hcsr04.New(usTrig, usEcho)
+	us := hcsr04.New(usTrigPin, usEchoPin)
 	us.Configure()
 
 	if err := n.Mode(ninja.ModeRoll); err != nil {
