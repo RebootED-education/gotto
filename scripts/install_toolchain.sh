@@ -5,6 +5,10 @@ set -euo pipefail
 GO_VERSION=${GO_VERSION:-1.22.4}
 TINYGO_VERSION=${TINYGO_VERSION:-0.40.1}
 PROFILE_FILE="${HOME}/.profile"
+SHELL_CONFIGS=("${HOME}/.profile" "${HOME}/.bashrc" "${HOME}/.bash_profile" "${HOME}/.zprofile" "${HOME}/.zshrc")
+GO_COMPAT_MIN=${GO_COMPAT_MIN:-1.19}
+GO_COMPAT_MAX=${GO_COMPAT_MAX:-1.22}
+ALLOW_UNSUPPORTED_GO=${ALLOW_UNSUPPORTED_GO:-0}
 OS_ID=""
 OS_LIKE=""
 
@@ -14,11 +18,56 @@ log() {
 
 append_path_line() {
 	local line=$1
-	if [[ -f "${PROFILE_FILE}" ]] && grep -qxF "${line}" "${PROFILE_FILE}"; then
+	touch "${PROFILE_FILE}"
+	for cfg in "${SHELL_CONFIGS[@]}"; do
+		[[ -f "${cfg}" ]] || continue
+		if grep -qxF "${line}" "${cfg}"; then
+			continue
+		fi
+		log "Adding PATH snippet to ${cfg}"
+		echo "${line}" >>"${cfg}"
+	done
+}
+
+version_minor_code() {
+	local version=$1
+	local major minor
+	IFS='.' read -r major minor _ <<<"${version}"
+	if [[ -z "${major}" || -z "${minor}" ]]; then
+		echo 0
 		return
 	fi
-	log "Adding PATH snippet to ${PROFILE_FILE}"
-	echo "${line}" >>"${PROFILE_FILE}"
+	printf "%d%02d" "${major}" "${minor}"
+}
+
+ensure_go_version_supported() {
+	if [[ "${ALLOW_UNSUPPORTED_GO}" == "1" ]]; then
+		return
+	fi
+	local go_code min_code max_code
+	go_code=$(version_minor_code "${GO_VERSION}")
+	min_code=$(version_minor_code "${GO_COMPAT_MIN}")
+	max_code=$(version_minor_code "${GO_COMPAT_MAX}")
+	if (( go_code < min_code || go_code > max_code )); then
+		cat >&2 <<-EOF
+Go ${GO_VERSION} is outside the supported range (${GO_COMPAT_MIN} - ${GO_COMPAT_MAX}) required by TinyGo ${TINYGO_VERSION}.
+Set GO_VERSION to a compatible release or export ALLOW_UNSUPPORTED_GO=1 to bypass this guard.
+EOF
+		exit 1
+	fi
+}
+
+create_go_symlinks() {
+	local go_bin="/usr/local/go/bin"
+	if [[ ! -d "${go_bin}" ]]; then
+		return
+	fi
+	log "Linking Go binaries into /usr/local/bin"
+	for tool in go gofmt; do
+		if [[ -x "${go_bin}/${tool}" ]]; then
+			sudo ln -sf "${go_bin}/${tool}" "/usr/local/bin/${tool}"
+		fi
+	done
 }
 
 detect_os() {
@@ -60,6 +109,7 @@ install_packages() {
 }
 
 install_go() {
+	ensure_go_version_supported
 	local archive="/tmp/go${GO_VERSION}.linux-amd64.tar.gz"
 	log "Downloading Go ${GO_VERSION}"
 	wget -qO "${archive}" "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
@@ -67,7 +117,7 @@ install_go() {
 	log "Installing Go to /usr/local/go"
 	sudo tar -C /usr/local -xzf "${archive}"
 	append_path_line 'export PATH=/usr/local/go/bin:$PATH'
-	source "${PROFILE_FILE}" >/dev/null 2>&1 || true
+	create_go_symlinks
 	log "$(/usr/local/go/bin/go version) installed"
 }
 
@@ -94,7 +144,7 @@ install_tinygo_tar() {
 	log "Installing TinyGo to /usr/local/tinygo"
 	sudo tar -C /usr/local -xzf "${archive}"
 	append_path_line 'export PATH=/usr/local/tinygo/bin:$PATH'
-	source "${PROFILE_FILE}" >/dev/null 2>&1 || true
+
 	local tinygo_bin="/usr/local/tinygo/bin/tinygo"
 	if [[ -x "${tinygo_bin}" ]]; then
 		log "$("${tinygo_bin}" version) installed"
@@ -127,7 +177,7 @@ main() {
 	install_packages
 	install_go
 	install_tinygo
-	log "Installation complete. Restart your shell session or run 'source ${PROFILE_FILE}' to update PATH."
+	log "Installation complete. Restart your shell session or source your shell rc file (~/.profile, ~/.bashrc, ~/.zshrc) to refresh PATH."
 }
 
 main "$@"
