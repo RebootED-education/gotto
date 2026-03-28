@@ -25,6 +25,14 @@ This project brings the beloved Otto ninja robot to the TinyGo ecosystem, allowi
 
 ### Prerequisites
 
+#### One-line installer (Linux)
+
+Run the following command to install Go, TinyGo, required build tools, and udev rules in a single step (works on Debian/Ubuntu, Fedora, and Arch-based distributions). You can override versions by prefixing `GO_VERSION=...` or `TINYGO_VERSION=...`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RebootED-education/gotto/main/scripts/install_toolchain.sh | bash
+```
+
 #### Install the Go toolset (Linux)
 
 1. Install the base build tools and ARM dependencies (Debian/Ubuntu example):
