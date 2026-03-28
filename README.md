@@ -112,6 +112,16 @@ curl -fsSL https://raw.githubusercontent.com/RebootED-education/gotto/main/scrip
 
 5. Power on the robot and watch it come to life!
 
+#### One-line demo flasher
+
+If you just want to flash the latest rolling obstacle demo without cloning the repo, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RebootED-education/gotto/main/scripts/flash_demo.sh | bash
+```
+
+Set `PORT=/dev/ttyACM0` (or similar) before the command if you need to force a serial port, or `TARGET=` to override the TinyGo target.
+
 ## Motor Trimming
 
 Before using your robot for complex movements, it's important to calibrate (trim) the servos for optimal performance. Servo motors can have slight variations in their zero positions and speeds, which can cause the robot to walk unevenly or tilt.
